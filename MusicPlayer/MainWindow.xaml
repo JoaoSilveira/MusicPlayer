@@ -5,8 +5,148 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:MusicPlayer"
         mc:Ignorable="d"
-        Title="MainWindow" Height="450" Width="800">
-    <Grid>
+        Title="Music Player" MinHeight="150" MinWidth="250" Icon="{StaticResource AppIcon}">
+    <Window.Resources>
+        <BooleanToVisibilityConverter x:Key="BooleanToVisibilityConverter"/>
+    </Window.Resources>
+    <Window.InputBindings>
+        <KeyBinding Key="MediaPlayPause" Command="MediaCommands.TogglePlayPause"/>
+        <KeyBinding Key="Space" Command="MediaCommands.TogglePlayPause"/>
+        <KeyBinding Key="MediaPreviousTrack" Command="MediaCommands.PreviousTrack"/>
+        <KeyBinding Key="MediaNextTrack" Command="MediaCommands.NextTrack"/>
+        <KeyBinding Key="VolumeUp" Command="MediaCommands.IncreaseVolume"/>
+        <KeyBinding Key="VolumeDown" Command="MediaCommands.DecreaseVolume"/>
+        <KeyBinding Key="Play" Command="MediaCommands.DecreaseVolume"/>
+    </Window.InputBindings>
+    <Window.CommandBindings>
+        <CommandBinding Command="local:MusicPlayerCommands.OpenFile" Executed="OpenFileOnExecuted"/>
+        <CommandBinding Command="local:MusicPlayerCommands.OpenFolder" Executed="OpenFolderOnExecuted"/>
+        <CommandBinding Command="ApplicationCommands.Close" Executed="CloseOnExecuted"/>
         
-    </Grid>
+        <CommandBinding Command="MediaCommands.TogglePlayPause" Executed="ToggleOnExecuted" CanExecute="ToggleOnCanExecute"/>
+        <CommandBinding Command="MediaCommands.Play" Executed="PlayOnExecuted" CanExecute="ToggleOnCanExecute"/>
+        <CommandBinding Command="MediaCommands.Pause" Executed="PauseOnExecuted" CanExecute="ToggleOnCanExecute"/>
+        <CommandBinding Command="MediaCommands.PreviousTrack" Executed="PreviousTrackOnExecuted" CanExecute="PreviousTrackOnCanExecute"/>
+        <CommandBinding Command="MediaCommands.NextTrack" Executed="NextTrackOnExecuted" CanExecute="NextTrackOnCanExecute"/>
+        <CommandBinding Command="MediaCommands.IncreaseVolume" Executed="IncreaseVolumeOnExecuted"/>
+        <CommandBinding Command="MediaCommands.DecreaseVolume" Executed="DecreaseVolumeOnExecuted"/>
+    </Window.CommandBindings>
+    <DockPanel>
+        <Menu DockPanel.Dock="Top" Background="{x:Null}">
+            <MenuItem Header="_File">
+                <MenuItem Header="Open _File" Icon="{StaticResource FileIcon}"/>
+                <MenuItem Header="_Open Folder" Icon="{StaticResource FolderIcon}"/>
+                <Separator/>
+                <MenuItem Header="E_xit" Command="ApplicationCommands.Close"/>
+            </MenuItem>
+            <MenuItem Header="_Playlist">
+                <MenuItem Header="_New" Icon="{StaticResource NewIcon}"/>
+                <MenuItem Header="_Save" Icon="{StaticResource SaveIcon}"/>
+            </MenuItem>
+            <MenuItem Header="_Help">
+                <MenuItem Header="_Help" Icon="{StaticResource HelpIcon}"/>
+                <MenuItem Header="_About"/>
+            </MenuItem>
+        </Menu>
+
+        <StackPanel DockPanel.Dock="Bottom" Margin="0 10">
+            <StackPanel.Resources>
+                <Style TargetType="ProgressBar">
+                    <Setter Property="Foreground" Value="{StaticResource BaseColor}"/>
+                    <Setter Property="Cursor" Value="Hand"/>
+                    <Setter Property="BorderBrush" Value="{x:Null}"/>
+                    <Setter Property="BorderThickness" Value="0"/>
+                    <Setter Property="Height" Value="5"/>
+                </Style>
+            </StackPanel.Resources>
+
+            <ProgressBar Name="trackBar" Margin="10 5" MouseDown="TrackBarOnMouseDown" MouseUp="TrackBarOnMouseUp" MouseMove="BarOnMouseMove" ToolTip="Seek"/>
+            <Grid>
+                <TextBlock Name="time" Margin="10 0 0 0" HorizontalAlignment="Left" VerticalAlignment="Center" Text="--:-- - --:--"/>
+                <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
+                    <StackPanel.Resources>
+                        <Style TargetType="Canvas" x:Key="ButtonCanvas">
+                            <Setter Property="Width" Value="20"/>
+                            <Setter Property="Height" Value="20"/>
+                            <Setter Property="Background" Value="Transparent"/>
+                        </Style>
+
+                        <Style TargetType="ButtonBase" x:Key="MediaButtonStyle">
+                            <Setter Property="Cursor" Value="Hand"/>
+                            <Setter Property="FocusVisualStyle" Value="{x:Null}"/>
+                            <Style.Triggers>
+                                <Trigger Property="IsEnabled" Value="True">
+                                    <Setter Property="Background" Value="{StaticResource BaseColor}"/>
+                                </Trigger>
+                                <Trigger Property="IsMouseOver" Value="True">
+                                    <Setter Property="Background" Value="{StaticResource HighlightBaseColor}"/>
+                                </Trigger>
+                                <Trigger Property="IsPressed" Value="True">
+                                    <Setter Property="Background" Value="{StaticResource ActiveBaseColor}"/>
+                                </Trigger>
+                                <Trigger Property="IsEnabled" Value="False">
+                                    <Setter Property="Background" Value="{StaticResource InactiveBaseColor}"/>
+                                </Trigger>
+                            </Style.Triggers>
+                        </Style>
+
+                        <ControlTemplate x:Key="SkipButton">
+                            <Canvas Style="{StaticResource ButtonCanvas}">
+                                <Rectangle Canvas.Top="2" Width="3" Height="16" Fill="{TemplateBinding Background}"/>
+                                <Polygon Points="5,10 20,0 20,20" Fill="{TemplateBinding Background}"/>
+                            </Canvas>
+                        </ControlTemplate>
+                    </StackPanel.Resources>
+                    <Button Command="MediaCommands.PreviousTrack" Style="{StaticResource MediaButtonStyle}" Template="{StaticResource SkipButton}" ToolTip="Previous"/>
+                    <ToggleButton Name="playButton" Command="MediaCommands.TogglePlayPause" Margin="15 0" Checked="PlayOnChecked" Unchecked="PlayOnUnchecked" Style="{StaticResource MediaButtonStyle}" ToolTip="Play">
+                        <ToggleButton.Template>
+                            <ControlTemplate>
+                                <Canvas Style="{StaticResource ButtonCanvas}">
+                                    <Path Name="playPath" Data="M2.5,0L17.5,10 2.5,20Z" Fill="{TemplateBinding Background}"/>
+                                </Canvas>
+                                <ControlTemplate.Triggers>
+                                    <Trigger Property="ToggleButton.IsChecked" Value="True">
+                                        <Setter Property="Data" TargetName="playPath" Value="M2.5,0h5v20h-5ZM12.5,0h5v20h-5Z"/>
+                                        <Setter Property="ToolTip" Value="Pause"/>
+                                    </Trigger>
+                                </ControlTemplate.Triggers>
+                            </ControlTemplate>
+                        </ToggleButton.Template>
+                    </ToggleButton>
+                    <Button Command="MediaCommands.NextTrack" Style="{StaticResource MediaButtonStyle}" Template="{StaticResource SkipButton}" RenderTransformOrigin=".5 0" ToolTip="Next">
+                        <Button.RenderTransform>
+                            <ScaleTransform ScaleX="-1"/>
+                        </Button.RenderTransform>
+                    </Button>
+                </StackPanel>
+                <ProgressBar Name="volumeBar" Margin="0 0 10 0" HorizontalAlignment="Right" Width="50" MouseDown="VolumeOnMouseDown" MouseUp="VolumeOnMouseUp" MouseMove="BarOnMouseMove" Maximum="1" Value="{Binding Volume, ElementName=element, Mode=TwoWay}" ToolTip="Volume (0 - 1)"/>
+
+                <Popup Name="tooltip" PlacementTarget="{Binding ElementName=volumeBar}" Placement="Right" VerticalOffset="-13" HorizontalOffset="-5" Width="35">
+                    <Border Background="{x:Static SystemColors.WindowBrush}" BorderBrush="{StaticResource InactiveBaseColor}" BorderThickness="1" Padding="5">
+                        <TextBlock Text="{Binding Volume, ElementName=element}"/>
+                    </Border>
+                </Popup>
+            </Grid>
+        </StackPanel>
+        <Grid DockPanel.Dock="Left">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="Auto"/>
+            </Grid.ColumnDefinitions>
+            <Grid Visibility="{Binding IsChecked, Converter={StaticResource BooleanToVisibilityConverter}, ElementName=leftPanelToggle}">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="*"/>
+                </Grid.RowDefinitions>
+                <TextBlock Text="Folder Tree" FontSize="16" FontWeight="Bold" HorizontalAlignment="Center"/>
+                <TreeView Grid.Row="1"/>
+            </Grid>
+            <ToggleButton Name="leftPanelToggle" Grid.Column="1" Content="&gt;" HorizontalAlignment="Right" Background="Transparent" BorderBrush="{x:Null}" BorderThickness="0">
+            </ToggleButton>
+        </Grid>
+        <Grid DockPanel.Dock="Right">
+
+        </Grid>
+        <MediaElement Name="element" MediaOpened="ElementOnMediaOpened" LoadedBehavior="Manual"/>
+    </DockPanel>
 </Window>
